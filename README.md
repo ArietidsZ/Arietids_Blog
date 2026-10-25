@@ -25,7 +25,7 @@ node scripts/check-blog-urls.mjs
 npm run preview:public
 ```
 
-`dist/` 为公开部署产物，`out/` 为本地预览产物。独立 Vercel 项目部署 `Arietids_Blog` 的源码，目前通过 CLI 发布，尚未绑定 Git 自动部署；使用 `npm run build`、输出目录 `dist`、域名 `blog.arietids.net`；无需主站路径重写。GitHub CI 只运行检查与测试，不部署。
+`dist/` 为公开部署产物，`out/` 为本地预览产物。独立 Vercel 项目通过原生 Git 集成关联 `ArietidsZ/Arietids_Blog`；使用 `npm run build`、输出目录 `dist`、域名 `blog.arietids.net`；无需主站路径重写。GitHub CI 只运行检查与测试。Vercel 在分支推送时构建预览，`main` 推送时构建生产版本；GitHub 的 `check` 检查通过后才把生产域名切到新版本。两站互不触发部署。
 
 ## 写作与发布
 
