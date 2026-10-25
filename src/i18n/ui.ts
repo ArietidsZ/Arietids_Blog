@@ -11,16 +11,7 @@ const zh = {
   'theme.toggle': '切换日夜主题',
   'motion.pause': '暂停动画',
   'lang.switch': 'English',
-
-
-
-
-
-
-
-
-
-
+  'lang.short': 'EN',
 
   'notes.title': '博客',
   'notes.lede': '技术、学习与研究的记录。',
@@ -28,6 +19,20 @@ const zh = {
   'notes.updated': '更新于',
   'notes.empty': '文章尚在准备中。',
   'notes.otherLang': '英文版',
+  'notes.all': '全部',
+  'notes.categories': '博客分类',
+  'notes.rss': '订阅 RSS',
+  'notes.count': '{n} 篇文章',
+  'notes.none': '文章尚未发布。',
+  'notes.contents': '目录',
+  'notes.tags': '标签',
+  'notes.older': '上一篇',
+  'notes.newer': '下一篇',
+  'notes.articles': '文章导航',
+  'notes.minutes': '{n} 分钟读完',
+  'notes.homepage': '个人主页',
+  'code.copy': '复制代码',
+  'code.copied': '已复制',
 
   'footer.top': '回到顶部',
 
@@ -35,7 +40,6 @@ const zh = {
   'preview.pending': '{n} 项待确认',
   'preview.marks': '标记',
   'preview.hint': '虚线框里的内容还没确认公开，生产构建不会包含它们。',
-
 
   '404.title': '页面不存在',
   '404.body': '这个地址没有公开的内容。',
@@ -57,16 +61,7 @@ const en: Record<UiKey, string> = {
   'theme.toggle': 'Switch between night and day',
   'motion.pause': 'Pause animation',
   'lang.switch': '中文',
-
-
-
-
-
-
-
-
-
-
+  'lang.short': '中文',
 
   'notes.title': 'Blog',
   'notes.lede': 'Notes on technology, learning and research.',
@@ -74,6 +69,20 @@ const en: Record<UiKey, string> = {
   'notes.updated': 'Updated',
   'notes.empty': 'Posts are on the way.',
   'notes.otherLang': 'Chinese version',
+  'notes.all': 'All',
+  'notes.categories': 'Blog categories',
+  'notes.rss': 'Subscribe via RSS',
+  'notes.count': '{n} articles',
+  'notes.none': 'No articles published yet.',
+  'notes.contents': 'On this page',
+  'notes.tags': 'Tags',
+  'notes.older': 'Older',
+  'notes.newer': 'Newer',
+  'notes.articles': 'Article navigation',
+  'notes.minutes': '{n} min read',
+  'notes.homepage': 'Personal site',
+  'code.copy': 'Copy code',
+  'code.copied': 'Copied',
 
   'footer.top': 'Back to top',
 
@@ -81,7 +90,6 @@ const en: Record<UiKey, string> = {
   'preview.pending': '{n} items awaiting approval',
   'preview.marks': 'Marks',
   'preview.hint': 'Dashed outlines mark content that is not approved yet. Production builds leave it out.',
-
 
   '404.title': 'Page not found',
   '404.body': 'Nothing is published at this address.',

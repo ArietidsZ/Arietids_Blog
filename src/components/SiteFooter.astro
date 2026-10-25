@@ -13,7 +13,7 @@ const year = new Date().getFullYear();
   <div class="container inner">
     <div class="sign"><Logo size={24} /><div><p class="who">{site.name}</p></div></div>
     <div class="links">
-      <a href={new URL(localePath(lang, '/'), site.homepage).href} rel="external">{lang === 'zh' ? '个人主页' : 'Personal site'} ↗</a>
+      <a href={new URL(localePath(lang, '/'), site.homepage).href} rel="external">{_('notes.homepage')}<Icon name="arrow-up-right" size={13} /></a>
       <a href={localePath(lang, '/rss.xml').replace(/\/$/, '')}>RSS</a>
       <a href="#top" data-to-top><Icon name="arrow-up" size={16} />{_('footer.top')}</a>
     </div>
@@ -41,7 +41,7 @@ const year = new Date().getFullYear();
     position: relative;
     margin-top: calc(var(--section-gap) / 2);
     padding-block: 1.6rem 1.8rem;
-    border-top: 1px solid var(--line);
+    border-top: var(--hairline) solid var(--line);
     background: linear-gradient(to bottom, transparent, var(--bg-deep));
   }
   .inner {
@@ -74,7 +74,7 @@ const year = new Date().getFullYear();
     color: var(--text-muted);
   }
   .links a:hover {
-    color: var(--accent);
+    color: var(--text);
   }
   .links a[hidden] {
     display: none;

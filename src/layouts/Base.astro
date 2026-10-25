@@ -87,6 +87,21 @@ const jsonLd = {
     <script type="speculationrules" is:inline set:html={JSON.stringify(speculation)} />
     <slot name="head" />
 
+    <!-- Returning from an article: its heading shrinks back into the matching title (see scripts/transitions.ts). -->
+    <script is:inline>
+      addEventListener('pagereveal', (e) => {
+        const from = window.navigation && navigation.activation && navigation.activation.from;
+        if (!e.viewTransition || !from || !from.url) return;
+        const path = new URL(from.url).pathname;
+        const m = path.match(/^\/(?:en\/)?([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/);
+        if (!m || ['blog', 'category', 'en', 'index', 'notes', 'rss'].includes(m[1]) || path === location.pathname) return;
+        const el = document.querySelector('[data-vt-title="' + CSS.escape(m[1]) + '"]');
+        if (!el) return;
+        el.style.viewTransitionName = 't-' + m[1];
+        e.viewTransition.finished.finally(() => (el.style.viewTransitionName = ''));
+      });
+    </script>
+
     <!-- Theme before first paint: saved choice, else the OS preference. -->
     <script is:inline>
       (() => {
@@ -133,6 +148,9 @@ const jsonLd = {
 <script>
   import '~/scripts/reveal';
   import '~/scripts/offscreen';
+  import '~/scripts/transitions';
+  import '~/scripts/clipboard';
+  import '~/scripts/rimlight';
 </script>
 
 <style>

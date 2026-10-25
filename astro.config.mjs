@@ -5,6 +5,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { unified } from '@astrojs/markdown-remark';
 import { focusableTables } from './integrations/focusable-tables.mjs';
+import { articleTypography } from './integrations/article.mjs';
 
 const site = process.env.SITE_URL ?? 'https://blog.arietids.net';
 
@@ -33,7 +34,7 @@ export default defineConfig({
   integrations: [mdx()],
   devToolbar: { enabled: false },
   markdown: {
-    processor: unified({ remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex, focusableTables] }),
+    processor: unified({ remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex, focusableTables, articleTypography] }),
     shikiConfig: {
       themes: { light: 'github-light', dark: 'github-dark' },
       defaultColor: false,

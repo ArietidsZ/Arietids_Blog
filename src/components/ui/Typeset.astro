@@ -1,0 +1,15 @@
+---
+/**
+ * A title set to break only between phrases (see lib/typeset.ts): Han titles take zero-width break
+ * hints between phrases and `word-break: keep-all` from the `[data-script='han']` rule in base.css;
+ * hyphenated compounds never break.
+ */
+import { segments } from '~/lib/typeset';
+
+interface Props {
+  text: string;
+}
+const parts = segments(Astro.props.text);
+---
+
+{parts.map((s) => (s.kind === 'wbr' ? '​' : s.kind === 'nobr' ? <span class="nobr">{s.text}</span> : s.text))}

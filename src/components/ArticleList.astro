@@ -1,92 +1,200 @@
 ---
+/**
+ * The archive: articles grouped by year, newest first. Each row is one link; on a fine pointer it
+ * lifts onto a plate and its arrow moves. The title carries `data-vt-title`, so opening an article
+ * grows it into the article's heading (scripts/transitions.ts).
+ */
 import type { CollectionEntry } from 'astro:content';
 import Icon from '~/components/ui/Icon.astro';
-import { formatDate, localePath, type Locale } from '~/i18n';
+import Typeset from '~/components/ui/Typeset.astro';
+import { htmlLang, localePath, type Locale } from '~/i18n';
 import { noteSlug } from '~/lib/content';
 import { blogPath, categoryLabel } from '~/lib/blog';
+import { script } from '~/lib/typeset';
 
 interface Props {
   lang: Locale;
   notes: CollectionEntry<'notes'>[];
 }
 const { lang, notes } = Astro.props;
+const years = new Map<number, CollectionEntry<'notes'>[]>();
+for (const n of notes) {
+  const y = n.data.date.getUTCFullYear();
+  years.set(y, [...(years.get(y) ?? []), n]);
+}
+const day = new Intl.DateTimeFormat(htmlLang[lang], { month: lang === 'zh' ? 'long' : 'short', day: 'numeric', timeZone: 'UTC' });
+let index = 0;
 ---
 
-<section id="notes" aria-labelledby="blog-title">
-  <ul class="list" role="list">
-    {
-      notes.map((n, i) => (
-        <li data-visibility={n.data.visibility} data-reveal style={`--reveal-i:${i}`}>
-          <a href={localePath(lang, blogPath(noteSlug(n)))}>
-            <time class="mono" datetime={n.data.date.toISOString()}>
-              {formatDate(n.data.date, lang, 'short')}
-            </time>
-            <span class="text">
-              <span class="category mono">{categoryLabel(n.data.category, lang)}</span>
-              <span class="title">{n.data.title}</span>
-              <span class="desc">{n.data.description}</span>
-            </span>
-            <Icon name="arrow-right" size={18} class="arrow" />
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+<section id="notes" class="archive" aria-labelledby="blog-title">
+  {
+    [...years].map(([year, items]) => (
+      <section class="year" aria-labelledby={`year-${year}`}>
+        <h2 class="year-head" id={`year-${year}`}>
+          <span class="year-n">{year}</span>
+          <span class="year-count data" aria-hidden="true">{items.length}</span>
+        </h2>
+        <ol class="list" role="list">
+          {items.map((n) => {
+            const slug = noteSlug(n);
+            const title = n.data.title;
+            return (
+              <li data-visibility={n.data.visibility} data-reveal style={`--reveal-i:${index++ % 4}`}>
+                <a class="row" href={localePath(lang, blogPath(slug))}>
+                  <time class="date" datetime={n.data.date.toISOString().slice(0, 10)}>{day.format(n.data.date)}</time>
+                  <span class="text">
+                    <span class="cat label">{categoryLabel(n.data.category, lang)}</span>
+                    <span class="title" data-script={script(title)} data-vt-title={slug} lang={lang === 'zh' && script(title) === 'latin' ? 'en' : undefined}>
+                      <Typeset text={title} />
+                    </span>
+                    <span class="desc">{n.data.description}</span>
+                  </span>
+                  <span class="go" aria-hidden="true">
+                    <Icon name="arrow-right" size={17} />
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    ))
+  }
 </section>
 
 <style>
-  .list {
-    border-top: 1px solid var(--line);
-  }
-  .list a {
+  .archive {
     display: grid;
-    grid-template-columns: 8rem minmax(0, 1fr) auto;
-    gap: 1.25rem;
-    align-items: baseline;
-    padding: 1.4rem 0;
-    border-bottom: 1px solid var(--line);
-    text-decoration: none;
+    gap: clamp(2.25rem, 4vw, 3.25rem);
   }
-  time {
+  /* The year runs a hairline out to its count, like a chapter rule. */
+  .year-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: var(--step-1);
+    font-weight: 400;
+    font-variant-numeric: lining-nums tabular-nums;
+    font-variation-settings: 'opsz' 36;
+    color: var(--text-muted);
+  }
+  .year-head::after {
+    content: '';
+    flex: 1;
+    order: 1;
+    height: var(--hairline);
+    background: linear-gradient(to right, var(--line-strong), var(--line) 70%);
+  }
+  .year-count {
+    order: 2;
     color: var(--text-faint);
-    text-transform: none;
+  }
+
+  .list li + li {
+    border-top: var(--hairline) solid var(--line);
+  }
+  /* A hovered row sits on its plate with no rule running through it. */
+  .list li:has(.row:hover),
+  .list li:has(.row:hover) + li {
+    border-top-color: transparent;
+  }
+  .row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) 1.5rem;
+    column-gap: 1.5rem;
+    align-items: center;
+    margin-inline: -1rem;
+    padding: 1.3rem 1rem 1.4rem;
+    border-radius: var(--r-card);
+    corner-shape: var(--corner);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background-color 0.25s,
+      scale var(--snappy-dur) var(--spring-snappy);
+  }
+  .row:active {
+    scale: 0.99;
+    transition-duration: 0.25s, 0.1s;
+  }
+  @media (hover: hover) {
+    .row:hover {
+      color: inherit;
+      background: color-mix(in oklch, var(--text) 4.5%, transparent);
+    }
+  }
+  .date {
+    align-self: start;
+    padding-top: 0.2rem;
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-faint);
+    white-space: nowrap;
   }
   .text {
     display: grid;
-    gap: 0.25rem;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+  .cat {
+    color: var(--text-faint);
   }
   .title {
     font-family: var(--font-display);
-    font-size: var(--step-2);
-    transition: color 0.2s;
+    font-size: clamp(1.25rem, 1.1rem + 0.55vw, 1.6rem);
+    font-weight: 500;
+    line-height: 1.3;
+    font-variation-settings: 'opsz' 48;
+    text-wrap: balance;
   }
-  .category {
-    color: var(--accent);
-    font-size: var(--step--2);
-    text-transform: none;
+  .title[data-script='han'] {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    letter-spacing: 0.01em;
+  }
+  .title[data-script='latin'] {
+    letter-spacing: var(--track-title);
   }
   .desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     color: var(--text-muted);
     font-size: var(--step--1);
+    line-height: 1.6;
+    text-wrap: pretty;
   }
-  .list a :global(.arrow) {
+  .go {
+    display: grid;
+    place-items: center;
     color: var(--text-faint);
-    transition: transform 0.3s var(--ease-out), color 0.2s;
+    transition:
+      translate var(--spring-dur) var(--spring),
+      color 0.25s;
   }
-  .list a:hover .title,
-  .list a:hover :global(.arrow) {
-    color: var(--accent);
+  .row:hover .go {
+    color: var(--text);
+    translate: 4px 0;
   }
-  .list a:hover :global(.arrow) {
-    transform: translateX(4px);
+  .row:focus-visible {
+    outline-offset: 0;
   }
   @media (max-width: 40rem) {
-    .list a {
-      grid-template-columns: 1fr auto;
-      gap: 0.4rem 1rem;
+    .row {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: 0.45rem;
+      margin-inline: -0.75rem;
+      padding: 1.1rem 0.75rem 1.2rem;
     }
-    time {
-      grid-column: 1 / -1;
+    .date {
+      padding-top: 0;
+    }
+    .go {
+      display: none;
     }
   }
 </style>

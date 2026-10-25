@@ -1,6 +1,7 @@
 ---
 import Base from '~/layouts/Base.astro';
 import ArticleList from '~/components/ArticleList.astro';
+import Icon from '~/components/ui/Icon.astro';
 import { localePath, t, type Locale } from '~/i18n';
 import { getNotes } from '~/lib/content';
 import { blogCategories, categoryDescription, categoryLabel, categoryPath, type BlogCategory } from '~/lib/blog';
@@ -18,47 +19,191 @@ const description = category ? categoryDescription(category, lang) : _('notes.le
 const feed = category
   ? localePath(lang, `${categoryPath(category)}rss.xml`).replace(/\/$/, '')
   : localePath(lang, '/rss.xml').replace(/\/$/, '');
-const labels = lang === 'zh'
-  ? { all: '全部', nav: '博客分类', rss: '订阅 RSS', empty: '文章尚未发布。', count: `${notes.length} 篇文章` }
-  : { all: 'All', nav: 'Blog categories', rss: 'Subscribe via RSS', empty: 'No articles published yet.', count: `${notes.length} ${notes.length === 1 ? 'article' : 'articles'}` };
+const count = lang === 'en' && notes.length === 1 ? '1 article' : _('notes.count', { n: notes.length });
+const segments = [
+  { id: 'all', href: localePath(lang, '/'), label: _('notes.all'), n: all.length, current: !category },
+  ...blogCategories.map((c) => ({
+    id: c,
+    href: localePath(lang, categoryPath(c)),
+    label: categoryLabel(c, lang),
+    n: all.filter((n) => n.data.category === c).length,
+    current: category === c,
+  })),
+];
 ---
 
-  <Base lang={lang} title={title} description={description}>
-    <div class="page container">
-      <header class="intro">
-        <p class="mono eyebrow">{lang === 'zh' ? 'BLOG' : 'WRITING'}</p>
-        <h1 id="blog-title">{title}</h1>
-        <p class="lede">{description}</p>
-      </header>
-      <nav class="categories" aria-label={labels.nav}>
-        <a href={localePath(lang, '/')} aria-current={!category ? 'page' : undefined}>{labels.all}</a>
-        {blogCategories.map((c) => (
-          <a href={localePath(lang, categoryPath(c))} aria-current={category === c ? 'page' : undefined}>
-            {categoryLabel(c, lang)}
-            <span class="mono count">{all.filter((n) => n.data.category === c).length}</span>
+<Base lang={lang} title={title} description={description}>
+  <div class="page container">
+    <header class="intro">
+      <p class="label eyebrow" lang="en">{category ? categoryLabel(category, 'en') : 'Blog'}</p>
+      <h1 id="blog-title">{title}</h1>
+      <p class="lede">{description}</p>
+    </header>
+
+    <div class="toolbar">
+      <!-- A segmented control. Each segment is a page; the raised thumb slides to the new one as
+           the page changes (a shared element in the cross-document view transition). -->
+      <nav class="seg" aria-label={_('notes.categories')}>
+        {segments.map((s) => (
+          <a href={s.href} aria-current={s.current ? 'page' : undefined} style={`--vt-seg:seg-${s.id}`}>
+            {s.current && <span class="thumb" aria-hidden="true" />}
+            <span class="seg-label">{s.label}</span>
+            <span class="seg-n data">{s.n}</span>
           </a>
         ))}
       </nav>
-      <div class="archive-meta mono">
-        <span>{labels.count}</span>
-        <a href={feed}>{labels.rss} <span aria-hidden="true">↗</span></a>
-      </div>
-      {notes.length > 0 ? <ArticleList lang={lang} notes={notes} /> : <p class="empty">{labels.empty}</p>}
+      <p class="archive-meta">
+        <span class="count">{count}</span>
+        <a class="rss" href={feed}>
+          <Icon name="rss" size={14} />
+          {_('notes.rss')}
+        </a>
+      </p>
     </div>
-  </Base>
+
+    {notes.length > 0 ? <ArticleList lang={lang} notes={notes} /> : <p class="empty">{_('notes.none')}</p>}
+  </div>
+</Base>
 
 <style>
-  .page { max-width: 64rem; padding-block: clamp(3rem, 8vw, 6rem); min-height: 72vh; }
-  .intro { max-width: 42rem; margin-bottom: 2.5rem; }
-  .eyebrow { color: var(--accent); margin-bottom: 1rem; }
-  h1 { font-size: var(--step-4); }
-  .lede { margin-top: 1.25rem; color: var(--text-muted); font-size: var(--step-1); }
-  .categories { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-  .categories a { display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1rem; border: 1px solid var(--line); border-radius: 999px; background: var(--pill-glass); color: var(--text-muted); text-decoration: none; }
-  .categories a:hover { border-color: var(--line-strong); color: var(--text); }
-  .categories a[aria-current='page'] { border-color: var(--mark-ring); color: var(--accent); background: var(--accent-soft); }
-  .count { font-size: var(--step--2); color: var(--text-faint); }
-  .archive-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-block: 2.5rem 1rem; color: var(--text-faint); text-transform: none; }
-  .archive-meta a { color: var(--accent); text-decoration: none; }
-  .empty { padding-block: 2.5rem; color: var(--text-muted); border-block: 1px solid var(--line); }
+  .page {
+    max-width: 66rem;
+    padding-block: clamp(3.5rem, 9vw, 7rem) clamp(2rem, 5vw, 4rem);
+    min-height: 72vh;
+  }
+  .intro {
+    max-width: 44rem;
+    margin-bottom: clamp(2.25rem, 4vw, 3.25rem);
+  }
+  .eyebrow {
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-size: var(--step-5);
+    line-height: 1;
+    font-variation-settings: 'opsz' 144;
+  }
+  h1:lang(en) {
+    letter-spacing: var(--track-display);
+  }
+  .lede {
+    margin-top: 1.25rem;
+    color: var(--text-muted);
+    font-size: var(--step-1);
+    line-height: 1.6;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  /* ---------- segmented control ---------- */
+  .seg {
+    display: inline-flex;
+    max-width: 100%;
+    padding: 3px;
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--pill-glass), var(--text) 5%);
+    box-shadow: inset 0 0 0 var(--hairline) var(--line);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .seg a {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 2.25rem;
+    padding-inline: 1rem;
+    border-radius: 999px;
+    font-size: var(--step--1);
+    color: var(--text-muted);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.2s;
+  }
+  .seg a:hover {
+    color: var(--text);
+  }
+  .seg a[aria-current] {
+    color: var(--text);
+  }
+  .seg-label,
+  .seg-n {
+    position: relative;
+    z-index: 1;
+    view-transition-name: var(--vt-seg);
+  }
+  .seg-n {
+    view-transition-name: none;
+    color: var(--text-faint);
+  }
+  .seg a[aria-current] .seg-n {
+    color: var(--text-muted);
+  }
+  /* The raised thumb: the bar's material, a lit edge and a contact shadow. */
+  .thumb {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background: color-mix(in oklch, var(--surface-solid) 93%, var(--text));
+    box-shadow: var(--edge), var(--edge-lit), var(--elev-1);
+    view-transition-name: seg-thumb;
+  }
+  :global(:root[data-theme='day']) .thumb {
+    background: var(--surface-solid);
+  }
+
+  .archive-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    color: var(--text-faint);
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+  }
+  .rss {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .rss:hover {
+    color: var(--accent);
+  }
+  .empty {
+    padding-block: 3rem;
+    color: var(--text-muted);
+    border-block: var(--hairline) solid var(--line);
+  }
+  @media (max-width: 40rem) {
+    .toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .seg {
+      align-self: start;
+    }
+    .archive-meta {
+      justify-content: space-between;
+    }
+  }
+</style>
+
+<style is:global>
+  /* The thumb glides between segments on a spring while the rest of the page cross-fades. */
+  ::view-transition-group(seg-thumb) {
+    animation-duration: var(--spring-dur);
+    animation-timing-function: var(--spring);
+  }
 </style>

@@ -117,7 +117,8 @@ try {
     page.on('requestfailed', request => errors.push(`${request.failure()?.errorText} ${request.url()}`));
     await page.goto(`${base}/framework-check/`, { waitUntil: 'networkidle' });
     await page.evaluate(() => { document.documentElement.dataset.marks = 'off'; });
-    assert.equal(await page.locator('h1').textContent(), '框架验收 <test>');
+    // Titles carry invisible line-break hints between phrases (src/lib/typeset.ts); the visible text is exact.
+    assert.equal((await page.locator('h1').textContent()).replaceAll('\u200b', ''), '框架验收 <test>');
     assert((await page.locator('.outline nav a').count()) >= 3);
     for (const href of await page.locator('.outline nav a').evaluateAll(links => links.map(link => link.getAttribute('href')))) {
       assert(await page.evaluate(hash => Boolean(document.getElementById(hash.slice(1))), href), `Missing TOC target ${href}`);
