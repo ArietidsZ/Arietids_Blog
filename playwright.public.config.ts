@@ -6,7 +6,7 @@ const port = 4343;
 /** Public-mode behavior with local URLs; the isolated blog flow also checks production URLs. */
 export default defineConfig({
   testDir: 'tests',
-  testMatch: ['public.spec.ts', 'blog.spec.ts'],
+  testMatch: ['refinement.spec.ts', 'public.spec.ts', 'blog.spec.ts'],
   timeout: 45_000,
   fullyParallel: true,
   reporter: process.env.CI ? 'github' : 'list',

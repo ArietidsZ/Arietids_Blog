@@ -197,4 +197,12 @@ let index = 0;
       display: none;
     }
   }
+  @media (prefers-reduced-motion: reduce) {
+    .row, .go { transition: background-color 0.25s, color 0.25s; }
+    .row:active { scale: none; }
+    .row:hover .go { translate: none; }
+  }
+  :global(:root[data-motion='off']) :is(.row, .go) { transition: background-color 0.25s, color 0.25s; }
+  :global(:root[data-motion='off']) .row:active { scale: none; }
+  :global(:root[data-motion='off']) .row:hover .go { translate: none; }
 </style>

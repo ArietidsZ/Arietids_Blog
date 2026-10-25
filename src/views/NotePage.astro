@@ -182,19 +182,36 @@ const adjacent = [older && neighbour(older, 'prev'), newer && neighbour(newer, '
       toc.style.setProperty('--mark-y', `${a.offsetTop}px`);
       toc.style.setProperty('--mark-h', `${a.offsetHeight}px`);
     };
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          const i = heads.indexOf(e.target as HTMLElement);
-          if (e.isIntersecting) current = Math.max(current, i);
-          else if (e.boundingClientRect.top > 0 && i <= current) current = i - 1;
-        }
+    // Resolve the actual reading position, including scrollbar jumps and history restoration.
+    // A binary search needs only logarithmic geometry reads; scrolling writes styles only when
+    // the current heading changes, with no timer or animation loop while the page is idle.
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const edge = innerHeight * 0.34;
+      let low = 0;
+      let high = heads.length;
+      while (low < high) {
+        const middle = (low + high) >>> 1;
+        if (heads[middle]!.getBoundingClientRect().top <= edge) low = middle + 1;
+        else high = middle;
+      }
+      if (current !== low - 1) {
+        current = low - 1;
         mark();
-      },
-      { rootMargin: '0px 0px -66% 0px' },
-    );
-    heads.forEach((h) => io.observe(h));
-    new ResizeObserver(mark).observe(toc);
+      }
+    };
+    const schedule = () => { frame ||= requestAnimationFrame(update); };
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    addEventListener('pageshow', schedule);
+    addEventListener('pagehide', () => { cancelAnimationFrame(frame); frame = 0; });
+    const resize = new ResizeObserver(() => { mark(); schedule(); });
+    resize.observe(toc);
+    const prose = document.querySelector('[data-prose]');
+    if (prose) resize.observe(prose);
+    document.fonts.ready.then(schedule);
+    schedule();
   }
 </script>
 
@@ -375,9 +392,8 @@ const adjacent = [older && neighbour(older, 'prev'), newer && neighbour(newer, '
     }
     .outline summary {
       padding: 0 0 0.85rem;
-      pointer-events: none;
     }
-    .outline summary :global(.icon) {
+    .outline[open] summary :global(.icon) {
       display: none;
     }
     /* A hairline rail with a gilt mark that glides to the section being read. */

@@ -77,6 +77,7 @@ const fixtures = {
   'framework-check.en.mdx': post({ lang: 'en', title: 'Framework verification', body: '## Translated heading\n\nOnly a temporary rendering fixture. $E=mc^2$.' }),
   'framework-only-en.en.md': post({ lang: 'en', title: 'English-only fixture', category: 'research', date: '2026-01-02', body: '## Only English\n\nDRAFT_UNPUBLISHED_CANARY_9342' }),
   'framework-newer.zh.md': post({ title: '较新文章验收', category: 'tech', date: '2026-01-03', body: '## Adjacent article\n\nDRAFT_NEIGHBOUR_CANARY_9342' }),
+  'framework-outline.zh.md': post({ title: 'TOC regression fixture', body: Array.from({ length: 24 }, (_, i) => `## Section ${i + 1}\n\n${Array.from({ length: 5 }, () => 'Temporary outline test paragraph. '.repeat(24)).join('\n\n')}`).join('\n\n') }),
   'framework-private.zh.md': post({ title: 'PRIVATE_TITLE_CANARY_9342', visibility: 'private', body: 'PRIVATE_BODY_CANARY_9342' }),
 };
 for (const [name, text] of Object.entries(fixtures)) writeFileSync(join(temp, '.drafts', name), text);
@@ -155,6 +156,15 @@ try {
     const anchor = await headingLink.getAttribute('href');
     await headingLink.click();
     assert.equal(decodeURIComponent(new URL(page.url()).hash), anchor);
+    // Native disclosure remains operable after crossing the desktop sidebar breakpoint.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('.outline summary').click();
+    assert.equal(await page.locator('.outline').evaluate(el => el.open), false);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.locator('.outline summary').click();
+    assert.equal(await page.locator('.outline').evaluate(el => el.open), true);
+    assert(await page.locator('.outline nav').isVisible());
+    await page.setViewportSize({ width, height: 900 });
     await page.locator('header .lang').click();
     await page.waitForLoadState('networkidle');
     assert.equal(new URL(page.url()).pathname, '/en/framework-check/');
@@ -162,9 +172,25 @@ try {
     const alternates = await page.locator('head link[hreflang]').evaluateAll(links => links.map(link => [link.getAttribute('hreflang'), link.getAttribute('href')]));
     assert.deepEqual(alternates.map(item => item[0]).sort(), ['en', 'x-default']);
     assert(alternates.every(item => item[1].endsWith('/en/framework-only-en/')));
+    await page.setViewportSize({ width: 1440, height: 700 });
+    await page.goto(`${base}/framework-outline/`, { waitUntil: 'networkidle' });
+    for (const index of [1, 20, 3]) {
+      await page.evaluate(index => {
+        const h = document.getElementById(`section-${index}`);
+        scrollTo({ top: scrollY + h.getBoundingClientRect().top + 200, behavior: 'instant' });
+      }, index);
+      await page.waitForFunction(index => document.querySelector('[data-toc] [aria-current="location"]')?.getAttribute('href') === `#section-${index}`, index);
+    }
+    await page.goto(base, { waitUntil: 'networkidle' });
+    const row = page.locator('.row').first();
+    await row.hover();
+    await page.mouse.down();
+    assert.equal(await row.evaluate(el => getComputedStyle(el).scale), 'none');
+    assert.equal(await row.locator('.go').evaluate(el => getComputedStyle(el).translate), 'none');
+    await page.mouse.move(1, 1); await page.mouse.up();
     assert.deepEqual(errors, []);
     await context.close();
-    checks.push(`preview browser ${width}px: math, code themes, table, footnotes, TOC, neighbours, metadata, language links, overflow, axe`);
+    checks.push(`preview browser ${width}px: math, code themes, table, footnotes, TOC disclosure and jump tracking, reduced-motion rows, neighbours, metadata, language links, overflow, axe`);
   }
   await browser.close(); browser = undefined;
   server.kill(); server = undefined;
@@ -184,7 +210,7 @@ try {
   assert(readFileSync(join(temp, 'dist/category/study/index.html'), 'utf8').includes('/framework-check/'));
   const all = textFiles(join(temp, 'dist')).map(file => readFileSync(file, 'utf8')).join('\n');
   for (const marker of ['DRAFT_UNPUBLISHED_CANARY_9342', 'DRAFT_NEIGHBOUR_CANARY_9342', 'PRIVATE_TITLE_CANARY_9342', 'PRIVATE_BODY_CANARY_9342', 'FUTURE_TITLE_CANARY_9342', 'FUTURE_BODY_CANARY_9342']) assert(!all.includes(marker), `Private or scheduled content leaked: ${marker}`);
-  for (const slug of ['framework-only-en', 'framework-newer', 'framework-private', 'framework-future']) {
+  for (const slug of ['framework-only-en', 'framework-newer', 'framework-private', 'framework-future', 'framework-outline']) {
     for (const locale of ['', 'en/']) assert(!existsSync(join(temp, `dist/${locale}${slug}/index.html`)));
   }
   checks.push('publish CLI → public article, category, RSS, sitemap, math and code; local drafts/private/future entries absent from every text artifact');
