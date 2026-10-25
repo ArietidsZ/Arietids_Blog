@@ -1,0 +1,51 @@
+{
+  "name": "arietids-blog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Independent Arietids blog. Static Astro site.",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "dev:public": "CONTENT_MODE=public astro dev",
+    "build": "node scripts/blog.mjs check && CONTENT_MODE=public astro build && node scripts/check-public.mjs && node scripts/fonts.mjs --check",
+    "build:preview": "node scripts/blog.mjs check && CONTENT_MODE=preview astro build",
+    "preview": "CONTENT_MODE=preview astro preview",
+    "preview:public": "CONTENT_MODE=public astro preview",
+    "check": "astro check && node scripts/blog.mjs check",
+    "fonts": "node scripts/fonts.mjs",
+    "test": "node --test \"scripts/**/*.test.mjs\"",
+    "test:e2e": "playwright test",
+    "test:public": "playwright test -c playwright.public.config.ts",
+    "test:blog:flow": "node scripts/test-blog-flow.mjs",
+    "post": "node scripts/blog.mjs"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "7.3.4",
+    "@astrojs/mdx": "^8.1.0",
+    "@astrojs/rss": "^4.0.19",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "astro": "^7.4.0",
+    "katex": "0.19.1",
+    "rehype-katex": "7.0.1",
+    "remark-math": "6.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^22.20.5",
+    "fontverter": "2.0.0",
+    "harfbuzzjs": "1.6.4",
+    "subset-font": "^2.9.0",
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.1"
+  },
+  "overrides": {
+    "katex": "$katex"
+  }
+}

@@ -1,0 +1,93 @@
+---
+import Icon from '~/components/ui/Icon.astro';
+import Logo from '~/components/ui/Logo.astro';
+import { localePath, t, type Locale } from '~/i18n';
+import { site } from '~/config/site';
+interface Props { lang: Locale; }
+const { lang } = Astro.props;
+const _ = t(lang);
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container inner">
+    <div class="sign"><Logo size={24} /><div><p class="who">{site.name}</p></div></div>
+    <div class="links">
+      <a href={new URL(localePath(lang, '/'), site.homepage).href} rel="external">{lang === 'zh' ? '个人主页' : 'Personal site'} ↗</a>
+      <a href={localePath(lang, '/rss.xml').replace(/\/$/, '')}>RSS</a>
+      <a href="#top" data-to-top><Icon name="arrow-up" size={16} />{_('footer.top')}</a>
+    </div>
+    <p class="meta data faint">© {year} {site.domain}</p>
+  </div>
+</footer>
+
+<script>
+  import { isStill } from '~/scripts/motion';
+
+  // "Back to top" only makes sense on pages long enough to scroll away from it.
+  const short = () => document.documentElement.scrollHeight < innerHeight * 1.5;
+  document.querySelectorAll<HTMLAnchorElement>('[data-to-top]').forEach((a) => (a.hidden = short()));
+  document.querySelectorAll<HTMLAnchorElement>('[data-to-top]').forEach((a) =>
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: isStill() ? 'auto' : 'smooth' });
+      document.querySelector<HTMLElement>('.brand')?.focus({ preventScroll: true });
+    }),
+  );
+</script>
+
+<style>
+  .site-footer {
+    position: relative;
+    margin-top: calc(var(--section-gap) / 2);
+    padding-block: 1.6rem 1.8rem;
+    border-top: 1px solid var(--line);
+    background: linear-gradient(to bottom, transparent, var(--bg-deep));
+  }
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2rem;
+  }
+  .sign {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    margin-right: auto;
+  }
+  .who {
+    font-family: var(--font-display);
+    font-size: var(--step-0);
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    font-size: var(--step--1);
+  }
+  .links a {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-muted);
+  }
+  .links a:hover {
+    color: var(--accent);
+  }
+  .links a[hidden] {
+    display: none;
+  }
+  .meta {
+    color: var(--text-faint);
+  }
+  @media (max-width: 40rem) {
+    .inner {
+      gap: 0.75rem 1.25rem;
+    }
+    .sign {
+      flex-basis: 100%;
+    }
+  }
+</style>

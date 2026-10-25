@@ -1,0 +1,156 @@
+---
+import '~/styles/global.css';
+import SiteHeader from '~/components/SiteHeader.astro';
+import SiteFooter from '~/components/SiteFooter.astro';
+import PreviewBar from '~/components/PreviewBar.astro';
+import Cosmos from '~/components/Cosmos.astro';
+import { htmlLang, localePath, locales, ogLocale, t, unlocalizedPath, type Locale } from '~/i18n';
+import { isPreview } from '~/lib/content';
+import { site } from '~/config/site';
+import cjkDisplayFont from '~/assets/fonts/noto-serif-sc.subset.woff2?url';
+
+interface Props {
+  lang: Locale;
+  title?: string;
+  description?: string;
+  type?: 'website' | 'article';
+  /** Locales this page exists in; defaults to all. Used for hreflang and the language switch. */
+  alternates?: readonly Locale[];
+  noindex?: boolean;
+  bare?: boolean;
+}
+
+const { lang, title, description, type = 'website', alternates = locales, noindex = false, bare = false } = Astro.props;
+const _ = t(lang);
+const siteTitle = site.name;
+const pageTitle = title ? `${title} · ${siteTitle}` : siteTitle;
+const pageDescription = description ?? _('notes.lede');
+const path = unlocalizedPath(Astro.url.pathname);
+const canonical = new URL(localePath(lang, path), Astro.site).href;
+const robots = noindex || isPreview ? 'noindex, nofollow' : undefined;
+
+const defaultAlternate = alternates.includes('zh') ? 'zh' : (alternates[0] ?? lang);
+
+// Same-site links are fetched once the pointer rests on them (or on touch start), so the next page
+// and its cross-document view transition start at once. Ignored where unsupported.
+const speculation = {
+  prefetch: [
+    {
+      source: 'document',
+      where: { and: [{ href_matches: '/*' }, { not: { selector_matches: '[target=_blank], [download], [rel~=nofollow]' } }] },
+      eagerness: 'moderate',
+    },
+  ],
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org', '@type': 'Blog',
+  name: site.name, description: _('notes.lede'), url: new URL('/', Astro.site).href,
+};
+---
+
+<!doctype html>
+<html lang={htmlLang[lang]} data-theme="night" data-marks={isPreview ? 'on' : undefined}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    {robots && <meta name="robots" content={robots} />}
+    <link rel="canonical" href={canonical} />
+    {
+      alternates.map((l) => (
+        <link rel="alternate" hreflang={htmlLang[l]} href={new URL(localePath(l, path), Astro.site).href} />
+      ))
+    }
+    <link rel="alternate" hreflang="x-default" href={new URL(localePath(defaultAlternate, path), Astro.site).href} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- Chinese pages set their largest text in this face: fetch it with the stylesheet, not after. -->
+    {lang === 'zh' && <link rel="preload" href={cjkDisplayFont} as="font" type="font/woff2" crossorigin />}
+    <link rel="alternate" type="application/rss+xml" title={`${siteTitle} RSS`} href={localePath(lang, '/rss.xml').replace(/\/$/, '')} />
+    <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f3ea" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="generator" content={Astro.generator} />
+    <noscript><style is:inline>@view-transition { navigation: none; }</style></noscript>
+
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={siteTitle} />
+    <meta property="og:locale" content={ogLocale[lang]} />
+    {alternates.filter((l) => l !== lang).map((l) => <meta property="og:locale:alternate" content={ogLocale[l]} />)}
+    <meta name="twitter:card" content="summary" />
+
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <script type="speculationrules" is:inline set:html={JSON.stringify(speculation)} />
+    <slot name="head" />
+
+    <!-- Theme before first paint: saved choice, else the OS preference. -->
+    <script is:inline>
+      (() => {
+        const d = document.documentElement;
+        d.classList.add('js');
+        let theme;
+        try {
+          if (localStorage.getItem('motion') === 'off') d.dataset.motion = 'off';
+          theme = localStorage.getItem('theme');
+          if (d.dataset.marks && localStorage.getItem('marks') === 'off') d.dataset.marks = 'off';
+        } catch {}
+        if (theme !== 'day' && theme !== 'night')
+          theme = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+        d.dataset.theme = theme;
+        // The browser chrome follows the page's theme, including one chosen by hand.
+        const chrome = () =>
+          document.querySelectorAll('meta[name="theme-color"]').forEach((m) => (m.content = d.dataset.theme === 'day' ? '#f7f3ea' : '#0b1020'));
+        chrome();
+        addEventListener('themechange', chrome);
+        // Paper is light: print in the day palette, then restore.
+        let screenTheme;
+        addEventListener('beforeprint', () => {
+          screenTheme = d.dataset.theme;
+          d.dataset.theme = 'day';
+          document.querySelectorAll('[data-reveal]').forEach((el) => el.classList.add('is-visible'));
+        });
+        addEventListener('afterprint', () => screenTheme && (d.dataset.theme = screenTheme));
+      })();
+    </script>
+  </head>
+  <body data-copy-failed-label={_('copy.failed')}>
+    <a class="skip" href="#main">{_('nav.skip')}</a>
+    <Cosmos />
+    {isPreview && <PreviewBar lang={lang} />}
+    {!bare && <SiteHeader lang={lang} alternates={alternates} />}
+    <main id="main">
+      <slot />
+    </main>
+    {!bare && <SiteFooter lang={lang} />}
+    <div class="sr-only" role="status" aria-live="polite" data-status></div>
+  </body>
+</html>
+
+<script>
+  import '~/scripts/reveal';
+  import '~/scripts/offscreen';
+</script>
+
+<style>
+  .skip {
+    position: fixed;
+    left: 1rem;
+    top: 0.75rem;
+    z-index: 200;
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius-s);
+    background: var(--accent-fill);
+    color: var(--accent-ink);
+    font-weight: 600;
+    text-decoration: none;
+    translate: 0 -200%;
+    transition: translate 0.2s var(--ease-out);
+  }
+  .skip:focus-visible {
+    translate: 0 0;
+  }
+</style>
